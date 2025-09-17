@@ -73,6 +73,7 @@
 
         // Define map style
         const lightStyle = 'mapbox://styles/geostudio/cmfl3fgpy001j01s82205hrxq';
+        const darkStyle = 'mapbox://styles/geostudio/cmfl6xt04003a01rxccb4hs82';
 
         // Initialize map
         const map = new mapboxgl.Map({
@@ -84,7 +85,7 @@
 
         // Store original light style
         let originalLightStyle = null;
-        const darkStyleUrl = 'mapbox://styles/geostudio/cmfl6xt04003a01rxccb4hs82';
+        const darkStyleUrl = darkStyle;
 
         // Initially hide satellite and background layers when map loads
         map.on('load', () => {
