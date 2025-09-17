@@ -71,9 +71,8 @@
         // Replace with your actual Mapbox access token
         mapboxgl.accessToken = 'pk.eyJ1IjoiZ2Vvc3R1ZGlvIiwiYSI6ImNrNWk5Mmp5eDBjNHQzbW10M3d6NzI1Y28ifQ.MPmtingHT1zi_Wk5ZxW8wA';
 
-        // Define map styles
+        // Define map style
         const lightStyle = 'mapbox://styles/geostudio/cmfl3fgpy001j01s82205hrxq';
-        const darkStyle = 'mapbox://styles/geostudio/cmfl6xt04003a01rxccb4hs82';
 
         // Initialize map
         const map = new mapboxgl.Map({
@@ -81,6 +80,26 @@
             style: lightStyle,
             //center: [-74.5, 40], // uncomment and change to your desired initial center. Default mapsyle
             //zoom: 9 // uncomment and change to your desired initial zoom level. Default mapsyle
+        });
+
+        // Store original light style
+        let originalLightStyle = null;
+        const darkStyleUrl = 'mapbox://styles/geostudio/cmfl6xt04003a01rxccb4hs82';
+
+        // Initially hide satellite and background layers when map loads
+        map.on('load', () => {
+            // Store the original light style
+            originalLightStyle = map.getStyle();
+            console.log('Original light style stored');
+            
+            // Hide satellite layer if it exists
+            if (map.getLayer('satellite')) {
+                map.setLayoutProperty('satellite', 'visibility', 'none');
+            }
+            // Hide background layer if it exists
+            if (map.getLayer('background')) {
+                map.setLayoutProperty('background', 'visibility', 'none');
+            }
         });
 
         // Add navigation control (zoom in/out) to the top-right
@@ -113,19 +132,66 @@
                 select.style.color = 'white';
 
                 const lightOption = document.createElement('option');
-                lightOption.value = lightStyle;
+                lightOption.value = 'light';
                 lightOption.text = 'Light';
                 lightOption.style.color = 'black';
                 select.appendChild(lightOption);
 
                 const darkOption = document.createElement('option');
-                darkOption.value = darkStyle;
+                darkOption.value = 'dark';
                 darkOption.text = 'Dark';
                 darkOption.style.color = 'black';
                 select.appendChild(darkOption);
 
                 select.addEventListener('change', (e) => {
-                    this._map.setStyle(e.target.value);
+                    const mode = e.target.value;
+                    if (mode === 'dark') {
+                        console.log('Switching to dark mode...');
+                        
+                        // Fetch the dark style from Mapbox
+                        fetch(`https://api.mapbox.com/styles/v1/${darkStyleUrl.replace('mapbox://styles/', '')}?access_token=${mapboxgl.accessToken}`)
+                            .then(response => response.json())
+                            .then(darkStyle => {
+                                console.log('Dark style fetched successfully');
+                                
+                                // Apply the dark style to the map
+                                map.setStyle(darkStyle);
+                                
+                                // After style is applied, ensure satellite and background layers are visible
+                                map.once('style.load', () => {
+                                    console.log('Dark style applied');
+                                    if (map.getLayer('satellite')) {
+                                        map.setLayoutProperty('satellite', 'visibility', 'visible');
+                                    }
+                                    if (map.getLayer('background')) {
+                                        map.setLayoutProperty('background', 'visibility', 'visible');
+                                    }
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Error fetching dark style:', error);
+                            });
+                    } else {
+                        console.log('Switching back to light mode...');
+                        
+                        // Restore the original light style
+                        if (originalLightStyle) {
+                            map.setStyle(originalLightStyle);
+                            
+                            // After style is applied, ensure satellite and background layers are hidden
+                            map.once('style.load', () => {
+                                console.log('Light style restored');
+                                if (map.getLayer('satellite')) {
+                                    map.setLayoutProperty('satellite', 'visibility', 'none');
+                                }
+                                if (map.getLayer('background')) {
+                                    map.setLayoutProperty('background', 'visibility', 'none');
+                                }
+                            });
+                        } else {
+                            console.error('Original light style not found');
+                        }
+                    }
                 });
 
                 this._container.appendChild(select);
